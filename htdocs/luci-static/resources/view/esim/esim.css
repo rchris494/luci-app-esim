@@ -1,0 +1,515 @@
+/*
+ * luci-app-esim.css
+ * Scoped styles for all esim views. Loaded via <link> in the LuCI template.
+ * Uses CSS custom properties from LuCI's base stylesheet where possible.
+ */
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+
+.esim-page {
+	max-width: 820px;
+	padding: 0 0 40px;
+}
+
+.esim-page-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+
+.esim-page-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 2px;
+	font-family: monospace;
+}
+
+.esim-page-sub {
+	font-size: 12px;
+	color: var(--color-text-secondary, #8b949e);
+	font-family: monospace;
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+
+.esim-card {
+	background: var(--color-background-secondary, #161b22);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 12px;
+}
+
+.esim-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.esim-card-title {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: var(--color-text-secondary, #8b949e);
+	font-family: monospace;
+}
+
+/* ── Stats ──────────────────────────────────────────────────────────────── */
+
+.esim-stat-row {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.esim-stat {
+	background: var(--color-background-tertiary, #1c2330);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+	border-radius: 6px;
+	padding: 12px;
+}
+
+.esim-stat-label {
+	font-size: 11px;
+	color: var(--color-text-tertiary, #6e7681);
+	font-family: monospace;
+	margin-bottom: 4px;
+}
+
+.esim-stat-value {
+	font-size: 18px;
+	font-weight: 600;
+	font-family: monospace;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────── */
+
+.esim-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-family: monospace;
+}
+
+.esim-badge.active {
+	background: rgba(63, 185, 80, 0.1);
+	color: #3fb950;
+	border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.esim-badge.inactive {
+	background: var(--color-background-tertiary, #1c2330);
+	color: var(--color-text-tertiary, #6e7681);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+}
+
+.esim-badge.enabled {
+	background: rgba(88, 166, 255, 0.1);
+	color: #58a6ff;
+	border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+.esim-badge.warn {
+	background: rgba(210, 153, 34, 0.1);
+	color: #d29922;
+	border: 1px solid rgba(210, 153, 34, 0.3);
+}
+
+/* ── Color utilities ────────────────────────────────────────────────────── */
+
+.green { color: #3fb950; }
+.blue  { color: #58a6ff; }
+.amber { color: #d29922; }
+.red   { color: #f85149; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────  */
+
+.esim-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border-radius: 6px;
+	border: 1px solid var(--color-border-secondary, #444c56);
+	background: var(--color-background-tertiary, #1c2330);
+	color: var(--color-text-primary, #e6edf3);
+	font-size: 12px;
+	cursor: pointer;
+	font-family: inherit;
+	text-decoration: none;
+	transition: background 0.15s, border-color 0.15s;
+}
+
+.esim-btn:hover {
+	background: var(--color-background-primary, #0d1117);
+	border-color: var(--color-text-tertiary, #6e7681);
+}
+
+.esim-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.esim-btn.primary {
+	background: rgba(63, 185, 80, 0.1);
+	border-color: #3fb950;
+	color: #3fb950;
+}
+
+.esim-btn.primary:hover {
+	background: rgba(63, 185, 80, 0.2);
+}
+
+.esim-btn.danger {
+	background: rgba(248, 81, 73, 0.1);
+	border-color: #f85149;
+	color: #f85149;
+}
+
+.esim-btn.danger:hover {
+	background: rgba(248, 81, 73, 0.2);
+}
+
+.esim-btn.sm {
+	padding: 4px 10px;
+	font-size: 11px;
+}
+
+/* ── Info rows ──────────────────────────────────────────────────────────── */
+
+.esim-info-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border-tertiary, #30363d);
+}
+
+.esim-info-row:last-child {
+	border-bottom: none;
+}
+
+.esim-info-key {
+	font-size: 12px;
+	color: var(--color-text-tertiary, #6e7681);
+	font-family: monospace;
+}
+
+.esim-info-val {
+	font-size: 12px;
+	color: var(--color-text-primary, #e6edf3);
+	text-align: right;
+}
+
+.esim-info-val.mono {
+	font-family: monospace;
+}
+
+.esim-info-val.small {
+	font-size: 10px;
+}
+
+.esim-info-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+/* ── Profile list ────────────────────────────────────────────────────────  */
+
+.esim-profile-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.esim-profile-item {
+	background: var(--color-background-secondary, #161b22);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+	border-radius: 8px;
+	padding: 14px 16px;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	transition: border-color 0.15s;
+}
+
+.esim-profile-item:hover {
+	border-color: var(--color-border-secondary, #444c56);
+}
+
+.esim-profile-item.active-profile {
+	border-color: #3fb950;
+	background: rgba(63, 185, 80, 0.04);
+}
+
+.esim-carrier-badge {
+	width: 36px;
+	height: 36px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	font-size: 11px;
+	font-family: monospace;
+	flex-shrink: 0;
+}
+
+.esim-profile-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.esim-profile-name {
+	font-size: 13px;
+	font-weight: 500;
+	margin-bottom: 3px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.esim-profile-iccid {
+	font-family: monospace;
+	font-size: 11px;
+	color: var(--color-text-tertiary, #6e7681);
+}
+
+.esim-profile-meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 4px;
+}
+
+.esim-profile-actions {
+	display: flex;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────  */
+
+.esim-tabs {
+	display: flex;
+	border-bottom: 1px solid var(--color-border-tertiary, #30363d);
+	margin-bottom: 16px;
+}
+
+.esim-tab {
+	padding: 8px 16px;
+	font-size: 12px;
+	font-family: monospace;
+	color: var(--color-text-tertiary, #6e7681);
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	transition: color 0.15s, border-color 0.15s;
+}
+
+.esim-tab:hover {
+	color: var(--color-text-primary, #e6edf3);
+}
+
+.esim-tab.active {
+	color: #3fb950;
+	border-bottom-color: #3fb950;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────────  */
+
+.esim-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.esim-form-label {
+	font-size: 12px;
+	color: var(--color-text-secondary, #8b949e);
+	font-family: monospace;
+}
+
+.esim-form-input {
+	background: var(--color-background-tertiary, #1c2330);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+	border-radius: 6px;
+	padding: 9px 12px;
+	color: var(--color-text-primary, #e6edf3);
+	font-family: monospace;
+	font-size: 13px;
+	outline: none;
+	transition: border-color 0.15s;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.esim-form-input:focus {
+	border-color: #58a6ff;
+}
+
+.esim-form-input::placeholder {
+	color: var(--color-text-tertiary, #6e7681);
+}
+
+.esim-form-hint {
+	font-size: 11px;
+	color: var(--color-text-tertiary, #6e7681);
+	font-family: monospace;
+}
+
+/* ── Log area ────────────────────────────────────────────────────────────  */
+
+.esim-log-area {
+	background: var(--color-background-primary, #0d1117);
+	border: 1px solid var(--color-border-tertiary, #30363d);
+	border-radius: 6px;
+	padding: 12px;
+	font-family: monospace;
+	font-size: 11px;
+	height: 160px;
+	overflow-y: auto;
+	line-height: 1.8;
+}
+
+.esim-log-line { display: block; }
+.esim-log-line .ts  { color: var(--color-text-tertiary, #6e7681); }
+.esim-log-line .ok  { color: #3fb950; }
+.esim-log-line .warn { color: #d29922; }
+.esim-log-line .err  { color: #f85149; }
+.esim-log-line .info { color: #58a6ff; }
+.esim-log-line .cmd  { color: var(--color-text-primary, #e6edf3); }
+.esim-log-line .msg  { color: var(--color-text-secondary, #8b949e); }
+
+/* ── Signal bars ─────────────────────────────────────────────────────────  */
+
+.esim-signal-bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	height: 18px;
+}
+
+.esim-signal-bar {
+	width: 4px;
+	border-radius: 1px;
+	background: var(--color-border-secondary, #444c56);
+}
+
+.esim-signal-bar.active {
+	background: #3fb950;
+}
+
+/* ── Progress ────────────────────────────────────────────────────────────  */
+
+.esim-progress-bar {
+	margin-top: 12px;
+}
+
+.esim-progress-step {
+	font-size: 11px;
+	font-family: monospace;
+	color: var(--color-text-secondary, #8b949e);
+	margin-bottom: 6px;
+}
+
+.esim-progress-track {
+	height: 4px;
+	background: var(--color-background-tertiary, #1c2330);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.esim-progress-fill {
+	height: 100%;
+	background: #3fb950;
+	border-radius: 2px;
+	transition: width 0.5s ease;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────  */
+
+.esim-alert {
+	padding: 10px 14px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-family: monospace;
+	margin-bottom: 12px;
+}
+
+.esim-alert.success {
+	background: rgba(63, 185, 80, 0.1);
+	border: 1px solid rgba(63, 185, 80, 0.3);
+	color: #3fb950;
+}
+
+.esim-alert.warn {
+	background: rgba(210, 153, 34, 0.1);
+	border: 1px solid rgba(210, 153, 34, 0.3);
+	color: #d29922;
+}
+
+/* ── Empty states ────────────────────────────────────────────────────────  */
+
+.esim-empty-state {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--color-text-tertiary, #6e7681);
+}
+
+.esim-empty-icon {
+	font-size: 32px;
+	margin-bottom: 12px;
+	opacity: 0.4;
+}
+
+.esim-empty-text {
+	font-size: 13px;
+	font-family: monospace;
+	margin-bottom: 4px;
+}
+
+.esim-empty-sub {
+	font-size: 12px;
+	font-family: monospace;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────  */
+
+.esim-dimmed {
+	color: var(--color-text-tertiary, #6e7681);
+}
+
+.esim-warn-text {
+	color: #d29922;
+	font-size: 12px;
+}
+
+.esim-modal-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+code {
+	background: var(--color-background-tertiary, #1c2330);
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-family: monospace;
+	font-size: 12px;
+}
+
+@media (max-width: 600px) {
+	.esim-stat-row    { grid-template-columns: 1fr 1fr; }
+	.esim-info-grid   { grid-template-columns: 1fr; }
+	.esim-profile-item { flex-wrap: wrap; }
+	.esim-profile-actions { width: 100%; justify-content: flex-end; }
+}

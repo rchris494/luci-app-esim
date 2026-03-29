@@ -1,0 +1,42 @@
+{
+  "luci-app-esim": {
+    "description": "LuCI eSIM Manager access control",
+    "read": {
+      "ubus": {
+        "luci.esim": [
+          "get_info",
+          "list_profiles",
+          "get_notifications",
+          "get_modem_info",
+          "get_system_log"
+        ]
+      },
+      "uci": {
+        "esim": [
+          "*"
+        ]
+      },
+      "file": {
+        "/var/log/esim.log": [ "read" ],
+        "/dev/ttyUSB*": [ "read" ]
+      }
+    },
+    "write": {
+      "ubus": {
+        "luci.esim": [
+          "enable_profile",
+          "disable_profile",
+          "delete_profile",
+          "download_profile",
+          "send_notifications",
+          "send_at"
+        ]
+      },
+      "uci": {
+        "esim": [
+          "*"
+        ]
+      }
+    }
+  }
+}

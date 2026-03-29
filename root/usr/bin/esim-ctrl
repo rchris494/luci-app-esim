@@ -1,0 +1,268 @@
+#!/bin/sh
+# esim-ctrl — CLI wrapper for eSIM profile management via lpac
+# Usage: esim-ctrl <command> [options]
+#
+# Commands:
+#   list                   List all installed profiles
+#   enable <iccid>         Enable a profile
+#   disable <iccid>        Disable a profile
+#   delete <iccid>         Delete a profile
+#   download <ac>          Download profile from activation code
+#   download -s <smdp> -m <matching_id> [-c <code>]   Manual download
+#   info                   Show chip/EID info
+#   notif list             List pending notifications
+#   notif send             Send and optionally remove notifications
+#   at <cmd>               Send a raw AT command
+#   log [lines]            Tail eSIM log (default: 50 lines)
+#   status                 Show overall modem+profile status
+#
+# Environment variables:
+#   LPAC_BIN       Path to lpac binary (default: /usr/bin/lpac)
+#   AT_DEVICE      AT serial device (default: from UCI or /dev/ttyUSB0)
+
+LPAC="${LPAC_BIN:-/usr/bin/lpac}"
+LOG_FILE="/var/log/esim.log"
+CONF_AT_DEVICE="$(uci -q get esim.modem.at_device 2>/dev/null)"
+AT_DEVICE="${AT_DEVICE:-${CONF_AT_DEVICE:-/dev/ttyUSB0}}"
+
+RED='\033[0;31m'
+GRN='\033[0;32m'
+YLW='\033[1;33m'
+BLU='\033[0;34m'
+DIM='\033[2m'
+RST='\033[0m'
+
+_ok()   { printf "${GRN}✓${RST}  %s\n" "$*"; }
+_err()  { printf "${RED}✗${RST}  %s\n" "$*" >&2; }
+_warn() { printf "${YLW}!${RST}  %s\n" "$*"; }
+_info() { printf "${BLU}·${RST}  %s\n" "$*"; }
+_hdr()  { printf "\n${DIM}%s${RST}\n" "$*"; }
+
+_check_lpac() {
+	if ! command -v "$LPAC" >/dev/null 2>&1; then
+		_err "lpac not found at $LPAC"
+		_err "Install with: opkg install lpac"
+		exit 1
+	fi
+}
+
+_at() {
+	local cmd="$1"
+	if [ ! -c "$AT_DEVICE" ]; then
+		_err "AT device not found: $AT_DEVICE"
+		return 1
+	fi
+	printf '%s\r\n' "$cmd" | socat -t 3 - "$AT_DEVICE",raw,echo=0,crnl 2>/dev/null | \
+		tr -d '\r' | grep -v '^$' | grep -v "^${cmd}$"
+}
+
+# ── Commands ─────────────────────────────────────────────────────────────────
+
+cmd_list() {
+	_check_lpac
+	_hdr "Installed eSIM Profiles"
+	"$LPAC" profile list | jsonfilter -e '@[*]' 2>/dev/null || \
+		"$LPAC" profile list
+}
+
+cmd_enable() {
+	local iccid="$1"
+	[ -z "$iccid" ] && _err "Usage: esim-ctrl enable <iccid>" && exit 1
+	_check_lpac
+	_info "Enabling profile $iccid ..."
+	if "$LPAC" profile enable "$iccid"; then
+		_ok "Profile enabled: $iccid"
+		local iface
+		iface="$(uci -q get esim.modem.wan_interface 2>/dev/null)"
+		iface="${iface:-wwan0}"
+		_info "Restarting interface $iface ..."
+		ifdown "$iface" 2>/dev/null; sleep 2; ifup "$iface" 2>/dev/null
+		_ok "Interface restarted"
+	else
+		_err "Failed to enable profile $iccid"
+		exit 1
+	fi
+}
+
+cmd_disable() {
+	local iccid="$1"
+	[ -z "$iccid" ] && _err "Usage: esim-ctrl disable <iccid>" && exit 1
+	_check_lpac
+	_info "Disabling profile $iccid ..."
+	if "$LPAC" profile disable "$iccid"; then
+		_ok "Profile disabled: $iccid"
+	else
+		_err "Failed to disable profile $iccid"
+		exit 1
+	fi
+}
+
+cmd_delete() {
+	local iccid="$1"
+	[ -z "$iccid" ] && _err "Usage: esim-ctrl delete <iccid>" && exit 1
+	_check_lpac
+	_warn "This will permanently delete profile $iccid from the eUICC."
+	printf "Type 'yes' to confirm: "
+	read -r confirm
+	[ "$confirm" != "yes" ] && _info "Cancelled." && exit 0
+	if "$LPAC" profile delete "$iccid"; then
+		_ok "Profile deleted: $iccid"
+	else
+		_err "Failed to delete profile $iccid"
+		exit 1
+	fi
+}
+
+cmd_download() {
+	_check_lpac
+	local ac="" smdp="" matching_id="" conf_code="" imei=""
+
+	# Check if first arg looks like an activation code
+	if echo "$1" | grep -qE '^(LPA:1\$|[a-zA-Z0-9.-]+\$)'; then
+		ac="$1"
+		ac="${ac#LPA:1$}"
+		smdp="${ac%%\$*}"
+		matching_id="${ac#*\$}"; matching_id="${matching_id%%\$*}"
+	else
+		while [ $# -gt 0 ]; do
+			case "$1" in
+				-s) smdp="$2"; shift 2 ;;
+				-m) matching_id="$2"; shift 2 ;;
+				-c) conf_code="$2"; shift 2 ;;
+				-i) imei="$2"; shift 2 ;;
+				*)  _err "Unknown option: $1"; exit 1 ;;
+			esac
+		done
+	fi
+
+	[ -z "$smdp" ] && _err "SM-DP+ server address required (-s <smdp>)" && exit 1
+
+	local args="-s $smdp"
+	[ -n "$matching_id" ] && args="$args -m $matching_id"
+	[ -n "$conf_code" ]   && args="$args -c $conf_code"
+	[ -n "$imei" ]        && args="$args -i $imei"
+
+	_info "Connecting to SM-DP+: $smdp"
+	_info "Matching ID: ${matching_id:-(none)}"
+	# shellcheck disable=SC2086
+	if "$LPAC" download $args; then
+		_ok "Profile downloaded successfully"
+	else
+		_err "Download failed"
+		exit 1
+	fi
+}
+
+cmd_info() {
+	_check_lpac
+	_hdr "eUICC Chip Information"
+	"$LPAC" chip info
+}
+
+cmd_notif() {
+	_check_lpac
+	case "$1" in
+		list) _hdr "Pending Notifications"; "$LPAC" notification list ;;
+		send)
+			_info "Sending notifications ..."
+			"$LPAC" notification send && _ok "Notifications sent"
+			if [ "$(uci -q get esim.settings.remove_notifications)" = "1" ]; then
+				"$LPAC" notification remove --all 2>/dev/null
+				_ok "Notification queue cleared"
+			fi
+			;;
+		*)    _err "Usage: esim-ctrl notif {list|send}" && exit 1 ;;
+	esac
+}
+
+cmd_at() {
+	local cmd="$*"
+	[ -z "$cmd" ] && _err "Usage: esim-ctrl at <AT+COMMAND>" && exit 1
+	_info "→ $cmd"
+	_at "$cmd"
+}
+
+cmd_log() {
+	local lines="${1:-50}"
+	_hdr "eSIM Log (last $lines lines)"
+	if [ -f "$LOG_FILE" ]; then
+		tail -n "$lines" "$LOG_FILE"
+	else
+		_warn "Log file not found: $LOG_FILE"
+	fi
+}
+
+cmd_status() {
+	_check_lpac
+	_hdr "Modem Status"
+	printf "  AT device  : %s\n" "$AT_DEVICE"
+	[ -c "$AT_DEVICE" ] && printf "  Device     : ${GRN}present${RST}\n" || \
+		printf "  Device     : ${RED}not found${RST}\n"
+
+	local model
+	model="$(_at 'AT+CGMM' 2>/dev/null | grep -v OK | head -1)"
+	[ -n "$model" ] && printf "  Model      : %s\n" "$model"
+
+	local csq
+	csq="$(_at 'AT+CSQ' 2>/dev/null | grep '+CSQ' | sed 's/+CSQ: //')"
+	[ -n "$csq" ] && printf "  Signal CSQ : %s\n" "$csq"
+
+	_hdr "Active Profile"
+	"$LPAC" profile list 2>/dev/null | \
+		jsonfilter -e '@[@.state="enabled"][0].nickname' 2>/dev/null || \
+		_warn "Could not determine active profile"
+
+	_hdr "Profile Count"
+	local count
+	count="$("$LPAC" profile list 2>/dev/null | jsonfilter -e '@[*].iccid' 2>/dev/null | wc -l)"
+	printf "  %s profile(s) installed\n" "${count:-0}"
+}
+
+# ── Help ─────────────────────────────────────────────────────────────────────
+
+cmd_help() {
+	cat <<-EOF
+	Usage: esim-ctrl <command> [options]
+
+	Commands:
+	  list                     List installed profiles
+	  enable  <iccid>          Enable a profile (triggers ifdown/ifup)
+	  disable <iccid>          Disable a profile
+	  delete  <iccid>          Delete a profile from eUICC (interactive confirm)
+	  download <AC>            Download via activation code (LPA:1\$... format)
+	  download -s <smdp> \\
+	           -m <matchingid> Download via manual parameters
+	           [-c <code>]
+	  info                     Show EID and chip information
+	  notif list               List pending RSP notifications
+	  notif send               Send notifications to operator server
+	  at <cmd>                 Send AT command to modem
+	  log [lines]              Show last N lines of eSIM log (default 50)
+	  status                   Show overall modem and profile status
+	  help                     Show this help
+
+	Environment:
+	  LPAC_BIN    lpac binary path (default: /usr/bin/lpac)
+	  AT_DEVICE   Serial device    (default: UCI config or /dev/ttyUSB0)
+	EOF
+}
+
+# ── Dispatch ─────────────────────────────────────────────────────────────────
+
+CMD="${1:-help}"
+[ $# -gt 0 ] && shift
+
+case "$CMD" in
+	list)     cmd_list     "$@" ;;
+	enable)   cmd_enable   "$@" ;;
+	disable)  cmd_disable  "$@" ;;
+	delete)   cmd_delete   "$@" ;;
+	download) cmd_download "$@" ;;
+	info)     cmd_info     "$@" ;;
+	notif)    cmd_notif    "$@" ;;
+	at)       cmd_at       "$@" ;;
+	log)      cmd_log      "$@" ;;
+	status)   cmd_status   "$@" ;;
+	help|-h|--help) cmd_help ;;
+	*)        _err "Unknown command: $CMD"; cmd_help; exit 1 ;;
+esac

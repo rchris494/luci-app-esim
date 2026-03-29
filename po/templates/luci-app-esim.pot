@@ -1,0 +1,254 @@
+# This is a POT file for luci-app-esim translations.
+# Generated from the JS view files.
+# Translators: copy this to po/<lang>/luci-app-esim.po and fill in msgstr values.
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "eSIM Overview"
+msgstr ""
+
+msgid "eSIM Profiles"
+msgstr ""
+
+msgid "Download Profile"
+msgstr ""
+
+msgid "Modem"
+msgstr ""
+
+msgid "eSIM Settings"
+msgstr ""
+
+msgid "System Overview"
+msgstr ""
+
+msgid "eUICC Chip"
+msgstr ""
+
+msgid "Active Profile"
+msgstr ""
+
+msgid "eUICC State"
+msgstr ""
+
+msgid "Profiles Stored"
+msgstr ""
+
+msgid "EID"
+msgstr ""
+
+msgid "APDU Device"
+msgstr ""
+
+msgid "SGP Spec"
+msgstr ""
+
+msgid "lpac Version"
+msgstr ""
+
+msgid "System Log"
+msgstr ""
+
+msgid "Manage profiles installed on eUICC"
+msgstr ""
+
+msgid "Download New"
+msgstr ""
+
+msgid "No profiles installed."
+msgstr ""
+
+msgid "Download a profile to get started."
+msgstr ""
+
+msgid "RSP Notifications"
+msgstr ""
+
+msgid "Send pending install/delete events to operator RSP servers."
+msgstr ""
+
+msgid "Send Notifications"
+msgstr ""
+
+msgid "Switching Profile"
+msgstr ""
+
+msgid "Profile enabled. Interface restarting."
+msgstr ""
+
+msgid "Delete Profile"
+msgstr ""
+
+msgid "This cannot be undone. The profile will need to be re-downloaded."
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Profile deleted."
+msgstr ""
+
+msgid "Install via SM-DP+ activation code"
+msgstr ""
+
+msgid "Activation Code"
+msgstr ""
+
+msgid "Manual Entry"
+msgstr ""
+
+msgid "Confirmation Code (optional)"
+msgstr ""
+
+msgid "SM-DP+ Server Address"
+msgstr ""
+
+msgid "Matching ID"
+msgstr ""
+
+msgid "IMEI (optional)"
+msgstr ""
+
+msgid "Object ID (optional)"
+msgstr ""
+
+msgid "Download & Install"
+msgstr ""
+
+msgid "About SM-DP+ Activation Codes"
+msgstr ""
+
+msgid "Hardware"
+msgstr ""
+
+msgid "Radio"
+msgstr ""
+
+msgid "AT Console"
+msgstr ""
+
+msgid "Tab to complete"
+msgstr ""
+
+msgid "Model"
+msgstr ""
+
+msgid "Revision"
+msgstr ""
+
+msgid "Temperature"
+msgstr ""
+
+msgid "Send"
+msgstr ""
+
+msgid "Allowed: "
+msgstr ""
+
+msgid "AT interface ready"
+msgstr ""
+
+msgid "eSIM Manager Settings"
+msgstr ""
+
+msgid "Configure the LPA daemon, modem interface, and notification behaviour."
+msgstr ""
+
+msgid "Modem Interface"
+msgstr ""
+
+msgid "APDU / AT Device"
+msgstr ""
+
+msgid "WAN Interface"
+msgstr ""
+
+msgid "LPA Daemon"
+msgstr ""
+
+msgid "Auto-enable on download"
+msgstr ""
+
+msgid "Disable current on switch"
+msgstr ""
+
+msgid "Reconnect WAN after switch"
+msgstr ""
+
+msgid "Reconnect delay (seconds)"
+msgstr ""
+
+msgid "Verify TLS certificates"
+msgstr ""
+
+msgid "Allow GSMA test certificates"
+msgstr ""
+
+msgid "Log Level"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid "Info"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "Send profile notifications"
+msgstr ""
+
+msgid "Remove after send"
+msgstr ""
+
+msgid "Settings saved. Restart the eSIM service to apply changes."
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "ready"
+msgstr ""
+
+msgid "offline"
+msgstr ""
+
+msgid "active"
+msgstr ""
+
+msgid "disabled"
+msgstr ""
+
+msgid "unknown"
+msgstr ""
+
+msgid "Enable"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Enter an activation code."
+msgstr ""
+
+msgid "Enter a SM-DP+ server address."
+msgstr ""
+
+msgid "Invalid activation code format."
+msgstr ""
+
+msgid "Profile downloaded and installed. Go to Profiles to activate."
+msgstr ""

@@ -1,0 +1,26 @@
+#!/bin/sh
+# /etc/uci-defaults/99-esim
+# Runs once on first boot to set defaults and enable the init script.
+
+uci -q batch <<-EOF
+	set esim.modem=modem
+	set esim.modem.at_device=/dev/ttyUSB0
+	set esim.modem.wan_interface=wwan0
+	set esim.modem.apdu_interface=/dev/ttyUSB0
+	set esim.settings=settings
+	set esim.settings.auto_enable=1
+	set esim.settings.auto_reconnect=1
+	set esim.settings.verify_certs=1
+	set esim.settings.test_certificates=0
+	set esim.settings.send_notifications=1
+	set esim.settings.remove_notifications=1
+	set esim.settings.disable_on_switch=1
+	set esim.settings.reconnect_delay=5
+	set esim.settings.log_level=info
+	commit esim
+EOF
+
+# Enable the service
+/etc/init.d/esim enable
+
+exit 0

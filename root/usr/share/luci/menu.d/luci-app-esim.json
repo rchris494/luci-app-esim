@@ -1,0 +1,50 @@
+{
+  "admin/network/esim": {
+    "title": "eSIM Manager",
+    "order": 72,
+    "action": {
+      "type": "firstchild"
+    },
+    "icon": "esim"
+  },
+  "admin/network/esim/overview": {
+    "title": "Overview",
+    "order": 10,
+    "action": {
+      "type": "view",
+      "path": "esim/overview"
+    }
+  },
+  "admin/network/esim/profiles": {
+    "title": "Profiles",
+    "order": 20,
+    "action": {
+      "type": "view",
+      "path": "esim/profiles"
+    }
+  },
+  "admin/network/esim/download": {
+    "title": "Download",
+    "order": 30,
+    "action": {
+      "type": "view",
+      "path": "esim/download"
+    }
+  },
+  "admin/network/esim/modem": {
+    "title": "Modem",
+    "order": 40,
+    "action": {
+      "type": "view",
+      "path": "esim/modem"
+    }
+  },
+  "admin/network/esim/settings": {
+    "title": "Settings",
+    "order": 50,
+    "action": {
+      "type": "view",
+      "path": "esim/settings"
+    }
+  }
+}

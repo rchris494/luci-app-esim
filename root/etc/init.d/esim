@@ -1,0 +1,83 @@
+#!/bin/sh /etc/rc.common
+# /etc/init.d/esim — eSIM manager service
+# Manages the log file and validates modem presence on boot.
+
+START=80
+STOP=10
+
+USE_PROCD=0
+
+LOG_FILE="/var/log/esim.log"
+LOG_MAX_BYTES=524288   # 512 KB — rotate when exceeded
+CONF="/etc/config/esim"
+
+_log() {
+	local ts
+	ts="$(date '+%Y-%m-%d %H:%M:%S')"
+	echo "[$ts] [init] $*" >> "$LOG_FILE"
+}
+
+_rotate_log() {
+	if [ -f "$LOG_FILE" ]; then
+		local size
+		size="$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)"
+		if [ "$size" -gt "$LOG_MAX_BYTES" ]; then
+			tail -c $((LOG_MAX_BYTES / 2)) "$LOG_FILE" > "${LOG_FILE}.tmp" && \
+				mv "${LOG_FILE}.tmp" "$LOG_FILE"
+			_log "log rotated (was ${size} bytes)"
+		fi
+	fi
+}
+
+_check_lpac() {
+	if ! command -v lpac >/dev/null 2>&1; then
+		_log "WARNING: lpac not found — install package 'lpac'"
+		return 1
+	fi
+	local ver
+	ver="$(lpac --version 2>&1 | head -1)"
+	_log "lpac found: $ver"
+	return 0
+}
+
+_check_at_device() {
+	local dev
+	dev="$(uci -q get esim.modem.at_device 2>/dev/null)"
+	dev="${dev:-/dev/ttyUSB0}"
+	if [ -c "$dev" ]; then
+		_log "AT device present: $dev"
+	else
+		_log "WARNING: AT device not found at $dev"
+	fi
+}
+
+start() {
+	[ ! -d "$(dirname "$LOG_FILE")" ] && mkdir -p "$(dirname "$LOG_FILE")"
+	_rotate_log
+	_log "=== esim service starting ==="
+	_check_lpac
+	_check_at_device
+
+	# Ensure rpcd is aware of the luci.esim plugin
+	if [ -x /usr/libexec/rpcd/luci.esim ]; then
+		_log "rpcd plugin: /usr/libexec/rpcd/luci.esim OK"
+	else
+		_log "ERROR: rpcd plugin not executable — check permissions"
+	fi
+
+	# Trigger rpcd reload so luci.esim is registered
+	/etc/init.d/rpcd reload >/dev/null 2>&1
+	_log "rpcd reloaded"
+
+	_log "=== esim service started ==="
+}
+
+stop() {
+	_log "=== esim service stopped ==="
+}
+
+reload() {
+	_log "=== esim service reload ==="
+	_check_lpac
+	_check_at_device
+}
