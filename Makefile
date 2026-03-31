@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-esim
 PKG_VERSION:=1.4.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=luci-app-esim contributors
 PKG_LICENSE:=Apache-2.0
