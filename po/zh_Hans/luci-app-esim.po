@@ -1,0 +1,273 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-esim\n"
+"POT-Creation-Date: 2026-03-31 14:00+0800\n"
+"PO-Revision-Date: 2026-03-31 14:00+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "eSIM Overview"
+msgstr "eSIM 概览"
+
+msgid "eSIM Profiles"
+msgstr "eSIM 配置文件"
+
+msgid "Download Profile"
+msgstr "下载配置文件"
+
+msgid "Modem"
+msgstr "调制解调器"
+
+msgid "eSIM Settings"
+msgstr "eSIM 设置"
+
+msgid "System Overview"
+msgstr "系统概览"
+
+msgid "eUICC Chip"
+msgstr "eUICC 芯片"
+
+msgid "Active Profile"
+msgstr "活动配置文件"
+
+msgid "eUICC State"
+msgstr "eUICC 状态"
+
+msgid "Profiles Stored"
+msgstr "已存储配置文件"
+
+msgid "EID"
+msgstr "EID"
+
+msgid "APDU Device"
+msgstr "APDU 设备"
+
+msgid "SGP Spec"
+msgstr "SGP 规范"
+
+msgid "lpac Version"
+msgstr "lpac 版本"
+
+msgid "System Log"
+msgstr "系统日志"
+
+msgid "Manage profiles installed on eUICC"
+msgstr "管理安装在 eUICC 上的配置文件"
+
+msgid "Download New"
+msgstr "下载新配置文件"
+
+msgid "No profiles installed."
+msgstr "未安装配置文件。"
+
+msgid "Download a profile to get started."
+msgstr "下载配置文件以开始使用。"
+
+msgid "RSP Notifications"
+msgstr "RSP 通知"
+
+msgid "Send pending install/delete events to operator RSP servers."
+msgstr "向运营商 RSP 服务器发送待处理的安装/删除事件。"
+
+msgid "Send Notifications"
+msgstr "发送通知"
+
+msgid "Switching Profile"
+msgstr "切换配置文件"
+
+msgid "Profile enabled. Interface restarting."
+msgstr "配置文件已启用。接口正在重启。"
+
+msgid "Delete Profile"
+msgstr "删除配置文件"
+
+msgid "This cannot be undone. The profile will need to be re-downloaded."
+msgstr "此操作无法撤销。配置文件需要重新下载。"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Profile deleted."
+msgstr "配置文件已删除。"
+
+msgid "Install via SM-DP+ activation code"
+msgstr "通过 SM-DP+ 激活码安装"
+
+msgid "Activation Code"
+msgstr "激活码"
+
+msgid "Manual Entry"
+msgstr "手动输入"
+
+msgid "Confirmation Code (optional)"
+msgstr "确认码（可选）"
+
+msgid "SM-DP+ Server Address"
+msgstr "SM-DP+ 服务器地址"
+
+msgid "Matching ID"
+msgstr "匹配 ID"
+
+msgid "IMEI (optional)"
+msgstr "IMEI（可选）"
+
+msgid "Object ID (optional)"
+msgstr "对象 ID（可选）"
+
+msgid "Download & Install"
+msgstr "下载并安装"
+
+msgid "About SM-DP+ Activation Codes"
+msgstr "关于 SM-DP+ 激活码"
+
+msgid "Hardware"
+msgstr "硬件"
+
+msgid "Radio"
+msgstr "无线"
+
+msgid "AT Console"
+msgstr "AT 控制台"
+
+msgid "Tab to complete"
+msgstr "Tab 键补全"
+
+msgid "Model"
+msgstr "型号"
+
+msgid "Revision"
+msgstr "版本"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "Send"
+msgstr "发送"
+
+msgid "Allowed: "
+msgstr "允许："
+
+msgid "AT interface ready"
+msgstr "AT 接口就绪"
+
+msgid "eSIM Manager Settings"
+msgstr "eSIM 管理器设置"
+
+msgid "Configure the LPA daemon, modem interface, and notification behaviour."
+msgstr "配置 LPA 守护进程、调制解调器接口和通知行为。"
+
+msgid "Modem Interface"
+msgstr "调制解调器接口"
+
+msgid "APDU / AT Device"
+msgstr "APDU / AT 设备"
+
+msgid "WAN Interface"
+msgstr "WAN 接口"
+
+msgid "LPA Daemon"
+msgstr "LPA 守护进程"
+
+msgid "Auto-enable on download"
+msgstr "下载时自动启用"
+
+msgid "Disable current on switch"
+msgstr "切换时禁用当前"
+
+msgid "Reconnect WAN after switch"
+msgstr "切换后重连 WAN"
+
+msgid "Reconnect delay (seconds)"
+msgstr "重连延迟（秒）"
+
+msgid "Verify TLS certificates"
+msgstr "验证 TLS 证书"
+
+msgid "Allow GSMA test certificates"
+msgstr "允许 GSMA 测试证书"
+
+msgid "Log Level"
+msgstr "日志级别"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Info"
+msgstr "信息"
+
+msgid "Debug"
+msgstr "调试"
+
+msgid "Send profile notifications"
+msgstr "发送配置文件通知"
+
+msgid "Remove after send"
+msgstr "发送后移除"
+
+msgid "Settings saved. Restart the eSIM service to apply changes."
+msgstr "设置已保存。重启 eSIM 服务以应用更改。"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "ready"
+msgstr "就绪"
+
+msgid "offline"
+msgstr "离线"
+
+msgid "active"
+msgstr "活动"
+
+msgid "disabled"
+msgstr "已禁用"
+
+msgid "unknown"
+msgstr "未知"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Active"
+msgstr "活动"
+
+msgid "Loading..."
+msgstr "加载中..."
+
+msgid "Enter an activation code."
+msgstr "输入激活码。"
+
+msgid "Enter a SM-DP+ server address."
+msgstr "输入 SM-DP+ 服务器地址。"
+
+msgid "Invalid activation code format."
+msgstr "无效的激活码格式。"
+
+msgid "Profile downloaded and installed. Go to Profiles to activate."
+msgstr "配置文件已下载并安装。请前往配置文件页面激活。"
+
+msgid "Enabling profile — the modem will reconnect momentarily..."
+msgstr "正在启用配置文件 — 调制解调器将立即重新连接..."
+
+msgid "Profile disabled."
+msgstr "配置文件已禁用。"
+
+msgid "Permanently delete profile \"%s\" from the eUICC?"
+msgstr "要从 eUICC 永久删除配置文件 \"%s\" 吗？"
+
+msgid "(unnamed)"
+msgstr "（未命名）"
+
+msgid "Switching Profile"
+msgstr "切换配置文件"
