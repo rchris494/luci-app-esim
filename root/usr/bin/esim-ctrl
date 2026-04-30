@@ -120,7 +120,7 @@ cmd_download() {
 	# Check if first arg looks like an activation code
 	if echo "$1" | grep -qE '^(LPA:1\$|[a-zA-Z0-9.-]+\$)'; then
 		ac="$1"
-		ac="${ac#LPA:1$}"
+		ac="${ac#LPA:1\$}"
 		smdp="${ac%%\$*}"
 		matching_id="${ac#*\$}"; matching_id="${matching_id%%\$*}"
 	else

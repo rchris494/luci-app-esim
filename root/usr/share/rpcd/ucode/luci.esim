@@ -1,0 +1,448 @@
+#!/bin/sh
+# luci.esim — RPCd plugin for eSIM profile management
+# Exposes JSON-RPC methods consumed by the LuCI JS frontend.
+# All communication with the eUICC goes through lpac(1).
+#
+# Methods:
+#   get_info          → chip EID, lpac version, interface status
+#   list_profiles     → array of installed profiles
+#   enable_profile    → enable profile by ICCID
+#   disable_profile   → disable profile by ICCID
+#   delete_profile    → delete profile by ICCID (cannot be active)
+#   download_profile  → download via SM-DP+ activation code or manual params
+#   get_notifications → pending RSP notification queue
+#   send_notifications → POST pending notifications to operator servers
+#   get_modem_info    → modem hardware + radio metrics via AT commands
+#   send_at           → send raw AT command (restricted to safe set)
+#   get_system_log    → tail of /var/log/esim.log
+#
+# RPCd dispatches to this script based on $1 (method name).
+# Input JSON is on stdin; output JSON is written to stdout.
+
+. /lib/functions.sh
+. /usr/share/libubox/jshn.sh
+
+LPAC_BIN="${LPAC_BIN:-/usr/bin/lpac}"
+ESIM_LOG="${ESIM_LOG:-/var/log/esim.log}"
+ESIM_CONF="/etc/config/esim"
+AT_DEVICE=""
+AT_TIMEOUT=5
+SAFE_AT_CMDS="AT AT+CIMI AT+CGMM AT+CGMI AT+CGSN AT+CSQ AT+CEREG? AT+CGDCONT? AT+QCSQ AT+QNWINFO AT+QTEMP"
+
+_log() {
+	local level="$1"; shift
+	local msg="$*"
+	local ts
+	ts="$(date '+%Y-%m-%d %H:%M:%S')"
+	echo "[$ts] [$level] $msg" >> "$ESIM_LOG"
+}
+
+_err() { _log ERROR "$@"; }
+_info() { _log INFO "$@"; }
+_warn() { _log WARN "$@"; }
+
+# ── UCI helpers ──────────────────────────────────────────────────────────────
+
+_get_uci() {
+	uci -q get "esim.$1" 2>/dev/null
+}
+
+_load_config() {
+	AT_DEVICE="$(_get_uci "modem.at_device")"
+	AT_DEVICE="${AT_DEVICE:-/dev/ttyUSB0}"
+}
+
+# ── JSON output helpers ──────────────────────────────────────────────────────
+
+_json_ok() {
+	local data="${1:-null}"
+	printf '{"code":0,"result":%s}\n' "$data"
+}
+
+_json_err() {
+	local code="${1:-1}"
+	local msg="${2:-unknown error}"
+	printf '{"code":%d,"error":"%s"}\n' "$code" "$(echo "$msg" | sed 's/"/\\"/g')"
+}
+
+# Run lpac and capture stdout/stderr; return exit code
+_lpac() {
+	local out err rc
+	out="$($LPAC_BIN "$@" 2>/tmp/lpac_stderr)"
+	rc=$?
+	err="$(cat /tmp/lpac_stderr 2>/dev/null)"
+	if [ $rc -ne 0 ]; then
+		_err "lpac $* failed (rc=$rc): $err"
+	fi
+	printf '%s' "$out"
+	return $rc
+}
+
+# ── AT command helper ────────────────────────────────────────────────────────
+
+_at_cmd() {
+	local cmd="$1"
+	local dev="${AT_DEVICE:-/dev/ttyUSB0}"
+
+	if [ ! -c "$dev" ]; then
+		echo "ERROR: device $dev not found"
+		return 1
+	fi
+
+	# Use socat for reliable AT exchange
+	printf '%s\r\n' "$cmd" | \
+		socat -t "$AT_TIMEOUT" - "$dev",raw,echo=0,crnl 2>/dev/null | \
+		tr -d '\r' | grep -v '^$' | grep -v "^$cmd$"
+}
+
+_at_cmd_safe() {
+	local cmd="$1"
+	local allowed=0
+	for safe in $SAFE_AT_CMDS; do
+		[ "$cmd" = "$safe" ] && allowed=1 && break
+	done
+	[ $allowed -eq 0 ] && echo "BLOCKED" && return 1
+	_at_cmd "$cmd"
+}
+
+# ── Method: get_info ─────────────────────────────────────────────────────────
+
+method_get_info() {
+	_load_config
+	local lpac_ver eid chip_info at_dev_ok
+
+	lpac_ver="$($LPAC_BIN --version 2>&1 | head -1 | awk '{print $NF}')"
+	chip_info="$(_lpac chip info 2>/dev/null)"
+
+	eid="$(echo "$chip_info" | jsonfilter -e '@.eid' 2>/dev/null)"
+	[ -z "$eid" ] && eid="unknown"
+
+	at_dev_ok="false"
+	[ -c "$AT_DEVICE" ] && at_dev_ok="true"
+
+	_info "get_info called"
+	_json_ok "$(printf '{
+		"lpac_version":"%s",
+		"eid":"%s",
+		"at_device":"%s",
+		"at_device_present":%s,
+		"lpac_bin":"%s",
+		"sgp_spec":"SGP.22 v2.4"
+	}' "$lpac_ver" "$eid" "$AT_DEVICE" "$at_dev_ok" "$LPAC_BIN")"
+}
+
+# ── Method: list_profiles ────────────────────────────────────────────────────
+
+method_list_profiles() {
+	local out rc
+
+	out="$(_lpac profile list)"
+	rc=$?
+
+	if [ $rc -ne 0 ] || [ -z "$out" ]; then
+		_err "profile list failed"
+		_json_err 2 "failed to retrieve profile list from lpac"
+		return
+	fi
+
+	_info "list_profiles: success"
+	_json_ok "$out"
+}
+
+# ── Method: enable_profile ───────────────────────────────────────────────────
+
+method_enable_profile() {
+	local iccid
+	json_load "$(cat)"
+	json_get_var iccid iccid
+
+	if [ -z "$iccid" ]; then
+		_json_err 3 "iccid is required"
+		return
+	fi
+
+	_info "enable_profile: $iccid"
+	local out rc
+	out="$(_lpac profile enable "$iccid")"
+	rc=$?
+
+	if [ $rc -ne 0 ]; then
+		_json_err 4 "failed to enable profile: $iccid"
+		return
+	fi
+
+	# Trigger network restart if configured
+	local auto_reconnect
+	auto_reconnect="$(_get_uci 'settings.auto_reconnect')"
+	if [ "$auto_reconnect" = "1" ]; then
+		local iface
+		iface="$(_get_uci 'modem.wan_interface')"
+		iface="${iface:-wwan0}"
+		ifdown "$iface" 2>/dev/null
+		sleep 2
+		ifup "$iface" 2>/dev/null &
+		_info "enable_profile: triggered ifdown/ifup on $iface"
+	fi
+
+	_json_ok '{"switched":true}'
+}
+
+# ── Method: disable_profile ──────────────────────────────────────────────────
+
+method_disable_profile() {
+	local iccid
+	json_load "$(cat)"
+	json_get_var iccid iccid
+
+	[ -z "$iccid" ] && _json_err 3 "iccid is required" && return
+
+	_info "disable_profile: $iccid"
+	local out rc
+	out="$(_lpac profile disable "$iccid")"
+	rc=$?
+
+	[ $rc -ne 0 ] && _json_err 4 "failed to disable profile: $iccid" && return
+	_json_ok '{"disabled":true}'
+}
+
+# ── Method: delete_profile ───────────────────────────────────────────────────
+
+method_delete_profile() {
+	local iccid
+	json_load "$(cat)"
+	json_get_var iccid iccid
+
+	[ -z "$iccid" ] && _json_err 3 "iccid is required" && return
+
+	_info "delete_profile: $iccid"
+	local out rc
+	out="$(_lpac profile delete "$iccid")"
+	rc=$?
+
+	[ $rc -ne 0 ] && _json_err 4 "lpac delete failed for: $iccid" && return
+	_json_ok '{"deleted":true}'
+}
+
+# ── Method: download_profile ─────────────────────────────────────────────────
+
+method_download_profile() {
+	local activation_code smdp matching_id confirmation_code imei
+
+	json_load "$(cat)"
+	json_get_var activation_code activation_code
+	json_get_var smdp           smdp
+	json_get_var matching_id    matching_id
+	json_get_var confirmation_code confirmation_code
+	json_get_var imei           imei
+
+	_load_config
+
+	local lpac_args=""
+
+	if [ -n "$activation_code" ]; then
+		# Strip LPA:1$ prefix if present
+		activation_code="${activation_code#LPA:1\$}"
+		# Parse smdp$matchingid from activation code
+		smdp="${activation_code%%\$*}"
+		matching_id="${activation_code#*\$}"
+		matching_id="${matching_id%%\$*}"
+	fi
+
+	[ -z "$smdp" ] && _json_err 3 "smdp server address is required" && return
+
+	lpac_args="-s $smdp"
+	[ -n "$matching_id" ]      && lpac_args="$lpac_args -m $matching_id"
+	[ -n "$confirmation_code" ] && lpac_args="$lpac_args -c $confirmation_code"
+	[ -n "$imei" ]             && lpac_args="$lpac_args -i $imei"
+
+	_info "download_profile: smdp=$smdp matching_id=$matching_id"
+
+	# shellcheck disable=SC2086
+	local out rc
+	out="$(_lpac download $lpac_args)"
+	rc=$?
+
+	if [ $rc -ne 0 ]; then
+		_json_err 5 "profile download failed — check SM-DP+ address and activation code"
+		return
+	fi
+
+	local auto_enable
+	auto_enable="$(_get_uci 'settings.auto_enable')"
+
+	local new_iccid
+	new_iccid="$(echo "$out" | jsonfilter -e '@.iccid' 2>/dev/null)"
+
+	if [ "$auto_enable" = "1" ] && [ -n "$new_iccid" ]; then
+		_lpac profile enable "$new_iccid" >/dev/null 2>&1
+		_info "download_profile: auto-enabled $new_iccid"
+	fi
+
+	# Send notifications if configured
+	local send_notifs
+	send_notifs="$(_get_uci 'settings.send_notifications')"
+	if [ "$send_notifs" = "1" ]; then
+		_lpac notification send >/dev/null 2>&1 &
+	fi
+
+	_json_ok "$out"
+}
+
+# ── Method: get_notifications ────────────────────────────────────────────────
+
+method_get_notifications() {
+	local out rc
+	out="$(_lpac notification list)"
+	rc=$?
+
+	[ $rc -ne 0 ] && _json_err 2 "failed to list notifications" && return
+	[ -z "$out" ] && out="[]"
+	_json_ok "$out"
+}
+
+# ── Method: send_notifications ───────────────────────────────────────────────
+
+method_send_notifications() {
+	local out rc
+	out="$(_lpac notification send)"
+	rc=$?
+	[ $rc -ne 0 ] && _json_err 6 "failed to send notifications" && return
+
+	local remove_sent
+	remove_sent="$(_get_uci 'settings.remove_notifications')"
+	if [ "$remove_sent" = "1" ]; then
+		_lpac notification remove --all >/dev/null 2>&1
+	fi
+
+	_json_ok '{"sent":true}'
+}
+
+# ── Method: get_modem_info ───────────────────────────────────────────────────
+
+method_get_modem_info() {
+	_load_config
+
+	local model revision imei csq cereg rat band rsrp rsrq sinr temp
+
+	model="$(_at_cmd 'AT+CGMM' | grep -v '^OK$' | head -1)"
+	revision="$(_at_cmd 'AT+CGMR' | grep -v '^OK$' | head -1)"
+	imei="$(_at_cmd 'AT+CGSN' | grep -v '^OK$' | head -1)"
+	csq="$(_at_cmd 'AT+CSQ' | grep '+CSQ' | sed 's/+CSQ: //')"
+	cereg="$(_at_cmd 'AT+CEREG?' | grep '+CEREG' | sed 's/+CEREG: //')"
+
+	# Quectel-specific extended signal info
+	local qcsq
+	qcsq="$(_at_cmd 'AT+QCSQ' 2>/dev/null | grep '+QCSQ')"
+	if [ -n "$qcsq" ]; then
+		# Field order: sysmode,rssi,rsrp,rssnr,rsrq per Quectel manual
+		rsrp="$(echo "$qcsq" | awk -F',' '{print $3}')"
+		sinr="$(echo "$qcsq" | awk -F',' '{print $4}')"
+		rsrq="$(echo "$qcsq" | awk -F',' '{print $5}')"
+	fi
+
+	local qtemp
+	qtemp="$(_at_cmd 'AT+QTEMP' 2>/dev/null | grep '+QTEMP')"
+	if [ -n "$qtemp" ]; then
+		# Try sensors in priority order across firmware versions
+		for sensor in "modem-ambient-usr" "sdx-case-therm-usr" "mdmss-0-usr" "mdm-core-usr" "xo-therm-usr" "aoss0-usr"; do
+			temp="$(echo "$qtemp" | grep "\"${sensor}\"" | awk -F',' '{print $2}' | tr -d '"' | head -1)"
+			[ -n "$temp" ] && break
+		done
+	fi
+
+	_info "get_modem_info: model=$model"
+	_json_ok "$(printf '{
+		"model":"%s",
+		"revision":"%s",
+		"imei":"%s",
+		"csq":"%s",
+		"cereg":"%s",
+		"rsrp":"%s",
+		"rsrq":"%s",
+		"sinr":"%s",
+		"temperature":"%s",
+		"at_device":"%s"
+	}' \
+		"${model:-unknown}" "${revision:-unknown}" "${imei:-unknown}" \
+		"${csq:-unknown}" "${cereg:-unknown}" \
+		"${rsrp:--}" "${rsrq:--}" "${sinr:--}" "${temp:--}" \
+		"$AT_DEVICE")"
+}
+
+# ── Method: send_at ──────────────────────────────────────────────────────────
+
+method_send_at() {
+	_load_config
+	local cmd
+	json_load "$(cat)"
+	json_get_var cmd cmd
+
+	[ -z "$cmd" ] && _json_err 3 "cmd is required" && return
+
+	local resp
+	resp="$(_at_cmd_safe "$cmd")"
+	local rc=$?
+
+	if [ $rc -ne 0 ] && [ "$resp" = "BLOCKED" ]; then
+		_warn "send_at: blocked command: $cmd"
+		_json_err 7 "command not in allowlist: $cmd"
+		return
+	fi
+
+	_info "send_at: $cmd -> $resp"
+	_json_ok "$(printf '{"cmd":"%s","response":"%s"}' \
+		"$(echo "$cmd" | sed 's/"/\\"/g')" \
+		"$(echo "$resp" | sed 's/"/\\"/g; s/$/\\n/' | tr -d '\n' | sed 's/\\n$//')")"
+}
+
+# ── Method: get_system_log ───────────────────────────────────────────────────
+
+method_get_system_log() {
+	local lines
+	json_load "$(cat)" 2>/dev/null
+	json_get_var lines lines
+	lines="${lines:-50}"
+
+	local log_data=""
+	if [ -f "$ESIM_LOG" ]; then
+		log_data="$(tail -n "$lines" "$ESIM_LOG" | \
+			sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | \
+			tr -d '\n' | sed 's/\\n$//')"
+	fi
+
+	_json_ok "$(printf '{"log":"%s"}' "$log_data")"
+}
+
+# ── Dispatch ─────────────────────────────────────────────────────────────────
+
+case "$1" in
+	list)
+		printf '{
+			"get_info":{},
+			"list_profiles":{},
+			"enable_profile":{"iccid":"str"},
+			"disable_profile":{"iccid":"str"},
+			"delete_profile":{"iccid":"str"},
+			"download_profile":{"activation_code":"str","smdp":"str","matching_id":"str","confirmation_code":"str","imei":"str"},
+			"get_notifications":{},
+			"send_notifications":{},
+			"get_modem_info":{},
+			"send_at":{"cmd":"str"},
+			"get_system_log":{"lines":"int"}
+		}\n'
+		;;
+	get_info)          method_get_info          ;;
+	list_profiles)     method_list_profiles      ;;
+	enable_profile)    method_enable_profile     ;;
+	disable_profile)   method_disable_profile    ;;
+	delete_profile)    method_delete_profile     ;;
+	download_profile)  method_download_profile   ;;
+	get_notifications) method_get_notifications  ;;
+	send_notifications) method_send_notifications ;;
+	get_modem_info)    method_get_modem_info     ;;
+	send_at)           method_send_at            ;;
+	get_system_log)    method_get_system_log     ;;
+	*)
+		_json_err 1 "unknown method: $1"
+		;;
+esac
